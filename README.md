@@ -63,11 +63,11 @@ Ex. `:call pim#get() => [01:30/25:00][Working][1]`
 Open the taskfile, if defined, and set a reminder.
 This is intended to set reminders so that you are not interrupted while working, but will open the taskfile at any time.
 
-`pim#set_task()`
-`pim#set_timer('25m')` `pim#set_timer('25:00')` `pim#set_timer('1500')`
-`pim#start_work()`
-`pim#check_off()`
-`pim#start_break('3m')` `pim#start_break('03:00')` `pim#start_break('180')`
+- `pim#set_task()`
+- `pim#set_timer('25m')` `pim#set_timer('25:00')` `pim#set_timer('1500')`
+- `pim#start_work()`
+- `pim#check_off()`
+- `pim#start_break('3m')` `pim#start_break('03:00')` `pim#start_break('180')`
 
 These functions allow for explicitly completing steps in order.
 You must be on the correct step for these functions to do anything.
