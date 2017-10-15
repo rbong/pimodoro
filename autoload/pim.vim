@@ -1,5 +1,12 @@
 let s:pim_file = "~/.pimodoro"
 
+" Time constants
+
+let s:no_time_error = 'Some amount of time is required'
+let s:minutes_seconds_pattern = '^\d\+:\d\+$'
+let s:minutes_pattern = '^\d\+[mM]$'
+let s:seconds_pattern = '^\d\+[sS]\?$'
+
 " Stage constants
 
 let s:setting_task = 'Setting task'
@@ -54,20 +61,70 @@ function! s:get_state()
   endif
 endfunction
 
-function! s:process_time(time)
-  try
-    if match(a:time, '^\d\+:\d\+$') == 0
-      let splittime = split(a:time, ':')
-      let hours = str2nr(splittime[0])
-      let minutes = str2nr(splittime[1])
-      if minutes < 60
-        return hours * 60 + minutes
-      endif
-    elseif match(a:time, '^\d\+[mM]$') == 0
-      return str2nr(a:time) * 60
+function! s:get_seconds(time)
+  if match(a:time, s:minutes_seconds_pattern) == 0
+    let splittime = split(a:time, ':')
+    let hours = str2nr(splittime[0])
+    let minutes = str2nr(splittime[1])
+    if minutes < 60
+      return hours * 60 + minutes
     endif
+  elseif match(a:time, s:minutes_pattern) == 0
+    return str2nr(a:time) * 60
+  elseif match(a:time, s:seconds_pattern) == 0
     return str2nr(a:time)
+  else
+    return 0
+  endif
+endfunction
+
+function! s:fix_seconds(seconds, next_stage)
+  let seconds = a:seconds
+  let min_seconds = seconds
+  if a:next_stage == s:starting_work
+    let min_seconds = 25*60
+  elseif a:next_stage == s:taking_long_break
+    let min_seconds = 15*60
+  elseif a:next_stage == s:taking_short_break
+    let min_seconds = 3*60
+  endif
+
+  let choice = 2
+  if seconds < min_seconds
+    let choice = confirm(
+          \ 'Short time detected. Did you mean '.seconds.'m?',
+          \ "&Yes\n&No\n&Cancel",
+          \ 2
+          \ )
+  endif
+
+  if choice == 1
+    return seconds*60
+  elseif choice == 2
+    return seconds
+  else
+    " Cancelled
+    return 0
+  endif
+endfunction
+
+function! s:parse_time(time, next_stage)
+  try
+    let seconds = s:get_seconds(a:time)
+    if !seconds
+      echo s:no_time_error
+      return 0
+    endif
+    if match(a:time, s:seconds_pattern) == 0
+      let seconds = s:fix_seconds(seconds, a:next_stage)
+      if !seconds
+        " Cancelled
+        return 0
+      endif
+    endif
+    return seconds
   catch
+    echo 'Time parsing error'
     return 0
   endtry
 endfunction
@@ -93,10 +150,8 @@ function! pim#set_timer(time)
   if state[1] != s:setting_timer
     echo 'Not currently setting timer'
   else
-    let time = s:process_time(a:time)
-    if time == 0
-      echo 'Working time length is required'
-    else
+    let time = s:parse_time(a:time, s:starting_work)
+    if time != 0
       return s:set_state(s:starting_work, time, state[3])
     endif
   endif
@@ -176,11 +231,9 @@ function! pim#start_break(time)
   if state[1] != s:starting_break
     echo 'Not currently starting break'
   else
-    let time = s:process_time(a:time)
-    if time == 0
-      echo 'Break time length is required'
-    else
-      let new_stage = state[1] == 4 ? s:taking_long_break : s:taking_short_break
+    let new_stage = state[1] == 4 ? s:taking_long_break : s:taking_short_break
+    let time = s:parse_time(a:time, new_stage)
+    if time != 0
       return s:set_state(new_stage, a:time, state[3])
     endif
   endif
@@ -224,7 +277,7 @@ function! pim#next(...)
     call pim#set_task()
   elseif stage == s:setting_timer
     if a:0 == 0 || !a:1
-      echo 'Working time length is required'
+      echo s:no_time_error
     else
       call pim#set_timer(a:1)
     endif
@@ -238,7 +291,7 @@ function! pim#next(...)
     call pim#check_off()
   elseif stage == s:starting_break
     if a:0 == 0 || !a:1
-      echo 'Breeak time length is required'
+      echo s:no_time_error
     else
       call pim#start_break(a:1)
     endif
