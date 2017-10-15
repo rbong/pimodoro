@@ -231,7 +231,7 @@ function! pim#start_break(time)
   if state[1] != s:starting_break
     echo 'Not currently starting break'
   else
-    let new_stage = state[1] == 4 ? s:taking_long_break : s:taking_short_break
+    let new_stage = state[3] == 4 ? s:taking_long_break : s:taking_short_break
     let time = s:parse_time(a:time, new_stage)
     if time != 0
       return s:set_state(new_stage, a:time, state[3])
