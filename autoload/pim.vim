@@ -234,7 +234,7 @@ function! pim#start_break(time)
     let new_stage = state[3] == 4 ? s:taking_long_break : s:taking_short_break
     let time = s:parse_time(a:time, new_stage)
     if time != 0
-      return s:set_state(new_stage, a:time, state[3])
+      return s:set_state(new_stage, time, state[3])
     endif
   endif
   return state
