@@ -210,7 +210,8 @@ function! s:finish_long_break()
 endfunction
 
 function! pim#void()
-  return s:set_state(s:setting_task, 0, state[3])
+  let state = s:get_state()
+  return s:set_state(s:setting_timer, 0, state[3])
 endfunction
 
 function! pim#void_set()
